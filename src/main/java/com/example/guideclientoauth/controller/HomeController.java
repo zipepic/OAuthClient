@@ -24,4 +24,7 @@ public class HomeController {
     public String secured(Principal principal) {
         return ("<h1>Secured</h1>" + principal.toString());
     }
+    @GetMapping("/auth")
+    public void auth() {
+    }
 }
