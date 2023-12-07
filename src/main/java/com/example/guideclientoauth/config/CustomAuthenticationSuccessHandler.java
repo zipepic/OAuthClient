@@ -1,8 +1,11 @@
 package com.example.guideclientoauth.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.core.commands.user.BindProviderIdToUserCommand;
 import com.project.core.commands.user.CreateUserFromProviderIdCommand;
 import com.project.core.commands.user.CreateUserProfileCommand;
+import com.project.core.commands.user.GenerateTokenByProviderIdCommand;
+import com.project.core.dto.TokenDTO;
 import com.project.core.queries.user.CheckUserProfileByProviderIdQuery;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -40,32 +43,47 @@ public class CustomAuthenticationSuccessHandler extends OncePerRequestFilter {
                     .providerType(provider)
                     .build();
             var userProfileId = queryGateway.query(query, String.class).join();
-            if(userProfileId != null) {
-                var command = BindProviderIdToUserCommand.builder()
-                        .userId(userProfileId)
-                        .providerId(oauthToken.getName())
-                        .providerType(provider)
-                        .build();
-                commandGateway.send(command);
-                filterChain.doFilter(request, response);
-                return;
-            }
 
-            if ("github".equals(provider)) {
-                var command = CreateUserFromProviderIdCommand.builder()
-                        .userId(UUID.randomUUID().toString())
-                        .userName(oauthToken.getName())
-                        .providerId(oauthToken.getName())
-                        .providerType(provider)
-                        .build();
-                commandGateway.send(command);
-                System.out.println("GitHub authentication: " + authentication.getName());
+            if(userProfileId == null) {
+                if ("github".equals(provider)) {
+                    var command = CreateUserFromProviderIdCommand.builder()
+                            .userId(UUID.randomUUID().toString())
+                            .userName(oauthToken.getName())
+                            .providerId(oauthToken.getName())
+                            .providerType(provider)
+                            .build();
+                    commandGateway.sendAndWait(command);
+                    System.out.println("GitHub authentication: " + authentication.getName());
 
-            } else if ("google".equals(provider)) {
-                System.out.println("Google authentication: " + authentication.getName());
+                } else if ("google".equals(provider)) {
+                    var command = CreateUserFromProviderIdCommand.builder()
+                            .userId(UUID.randomUUID().toString())
+                            .userName(oauthToken.getName())
+                            .providerId(oauthToken.getName())
+                            .providerType(provider)
+                            .build();
+                    commandGateway.sendAndWait(command);
+                    System.out.println("Google authentication: " + authentication.getName());
+                }
             }
+            var command = GenerateTokenByProviderIdCommand.builder()
+                    .userId(userProfileId)
+                    .providerId(oauthToken.getName())
+                    .providerType(provider)
+                    .build();
+            var tokenDTO = (TokenDTO) commandGateway.sendAndWait(command);
+            System.out.println(tokenDTO.getAccessToken());
+            response.addHeader("access", tokenDTO.getAccessToken());
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            String tokenJson = objectMapper.writeValueAsString(tokenDTO);
+
+            response.setContentType("application/json");
+
+            response.getWriter().write(tokenJson);
+            response.getWriter().flush();
+
         }
-
         filterChain.doFilter(request, response);
     }
 }
