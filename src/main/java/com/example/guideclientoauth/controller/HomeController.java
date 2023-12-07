@@ -16,8 +16,6 @@ import java.util.Map;
 
 @RestController
 public class HomeController {
-    @Autowired
-    private OAuth2AuthorizedClientService authorizedClientService;
     @GetMapping("/")
     public String home() {
         return ("<h1>Welcome</h1>");
@@ -25,17 +23,5 @@ public class HomeController {
     @GetMapping("/secured")
     public String secured(Principal principal) {
         return ("<h1>Secured</h1>" + principal.toString());
-    }
-    @GetMapping("/user")
-    public String home(Principal principal) {
-
-        OAuth2AuthorizedClient authorizedClient = authorizedClientService.loadAuthorizedClient("github", principal.getName());
-        Map<String, String> map = new HashMap<>();
-        map.put("getPrincipalName", authorizedClient.getPrincipalName());
-        map.put("accessTokenType", authorizedClient.getAccessToken().getTokenType().getValue());
-        map.put("Access token-> ", authorizedClient.getAccessToken().getTokenValue());
-        map.put("clientRegis", authorizedClient.getClientRegistration().getClientId());
-
-        return ("<h1>Welcome</h1>" + "Access Token: " + map);
     }
 }
