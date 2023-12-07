@@ -1,6 +1,7 @@
 package com.example.guideclientoauth;
 
 import com.project.core.commands.user.*;
+import com.project.core.dto.TokenAuthorizationCodeDTO;
 import com.project.core.queries.user.CheckUserProfileByProviderIdQuery;
 import com.thoughtworks.xstream.XStream;
 import org.springframework.boot.SpringApplication;
@@ -20,7 +21,9 @@ public class GuideClientOauthApplication {
                 CreateUserProfileCommand.class,
                 CheckUserProfileByProviderIdQuery.class,
                 BindProviderIdToUserCommand.class,
-                CreateUserFromProviderIdCommand.class);
+                CreateUserFromProviderIdCommand.class,
+                GenerateTokenByProviderIdCommand.class,
+                TokenAuthorizationCodeDTO.class);
 
         return xStream;
     }
