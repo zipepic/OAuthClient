@@ -1,6 +1,9 @@
 package com.example.guideclientoauth.config;
 
 import jakarta.servlet.Filter;
+import org.axonframework.commandhandling.gateway.CommandGateway;
+import org.axonframework.queryhandling.QueryGateway;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -12,6 +15,14 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+    private final QueryGateway queryGateway;
+    private final CommandGateway commandGateway;
+    @Autowired
+    public SecurityConfig(QueryGateway queryGateway, CommandGateway commandGateway) {
+        this.queryGateway = queryGateway;
+        this.commandGateway = commandGateway;
+    }
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
@@ -27,6 +38,6 @@ public class SecurityConfig {
     }
     @Bean
     public Filter customAuthenticationSuccessHandler() {
-        return new CustomAuthenticationSuccessHandler();
+        return new CustomAuthenticationSuccessHandler(commandGateway, queryGateway);
     }
 }
