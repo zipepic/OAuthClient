@@ -1,11 +1,12 @@
 package com.example.guideclientoauth.config;
 
+import com.example.guideclientoauth.query.api.data.UserProfileProviderMappingLookUpEntity;
+import com.example.guideclientoauth.query.api.data.UserProfileProviderMappingLookUpRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.core.commands.user.BindProviderIdToUserCommand;
 import com.project.core.commands.user.CreateUserFromProviderIdCommand;
-import com.project.core.commands.user.CreateUserProfileCommand;
 import com.project.core.commands.user.GenerateTokenByProviderIdCommand;
 import com.project.core.dto.TokenDTO;
+import com.project.core.events.user.UserProfileProviderMappingLookUpCreatedEvent;
 import com.project.core.queries.user.CheckUserProfileByProviderIdQuery;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -17,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tokenlib.util.jwk.AuthProvider;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -24,10 +26,12 @@ import java.util.UUID;
 public class CustomAuthenticationSuccessHandler extends OncePerRequestFilter {
     private final CommandGateway commandGateway;
     private final QueryGateway queryGateway;
+    private final UserProfileProviderMappingLookUpRepository userProfileProviderMappingLookUpRepository;
 
-    public CustomAuthenticationSuccessHandler(CommandGateway commandGateway, QueryGateway queryGateway) {
+    public CustomAuthenticationSuccessHandler(CommandGateway commandGateway, QueryGateway queryGateway, UserProfileProviderMappingLookUpRepository userProfileProviderMappingLookUpRepository) {
         this.commandGateway = commandGateway;
         this.queryGateway = queryGateway;
+        this.userProfileProviderMappingLookUpRepository = userProfileProviderMappingLookUpRepository;
     }
 
     @Override
@@ -38,19 +42,20 @@ public class CustomAuthenticationSuccessHandler extends OncePerRequestFilter {
             
             String provider = oauthToken.getAuthorizedClientRegistrationId();
 
-            var query = CheckUserProfileByProviderIdQuery.builder()
-                    .providerId(oauthToken.getName())
-                    .providerType(provider)
-                    .build();
-            var userProfileId = queryGateway.query(query, String.class).join();
+            UserProfileProviderMappingLookUpEntity userProfileEntity = null;
+//            if("github".equals(provider))
+//                userProfileEntity = userProfileProviderMappingLookUpRepository.findAllByGithubId(oauthToken.getName()).orElse(null);
+//            if("google".equals(provider))
+//                userProfileEntity = userProfileProviderMappingLookUpRepository.findAllByGoogleId(oauthToken.getName()).orElse(null);
 
-            if(userProfileId == null) {
+
+            if(userProfileEntity == null) {
                 if ("github".equals(provider)) {
                     var command = CreateUserFromProviderIdCommand.builder()
                             .userId(UUID.randomUUID().toString())
                             .userName(oauthToken.getName())
                             .providerId(oauthToken.getName())
-                            .providerType(provider)
+                            .authProvider(AuthProvider.GITHUB)
                             .build();
                     commandGateway.sendAndWait(command);
                     System.out.println("GitHub authentication: " + authentication.getName());
@@ -60,14 +65,14 @@ public class CustomAuthenticationSuccessHandler extends OncePerRequestFilter {
                             .userId(UUID.randomUUID().toString())
                             .userName(oauthToken.getName())
                             .providerId(oauthToken.getName())
-                            .providerType(provider)
+                            .authProvider(AuthProvider.GOOGLE)
                             .build();
                     commandGateway.sendAndWait(command);
                     System.out.println("Google authentication: " + authentication.getName());
                 }
             }
             var command = GenerateTokenByProviderIdCommand.builder()
-                    .userId(userProfileId)
+                    .userId(UUID.randomUUID().toString())
                     .providerId(oauthToken.getName())
                     .providerType(provider)
                     .build();
