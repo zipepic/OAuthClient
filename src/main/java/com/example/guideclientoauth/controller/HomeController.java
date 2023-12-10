@@ -16,10 +16,6 @@ import java.util.Map;
 
 @RestController
 public class HomeController {
-    @GetMapping("/")
-    public String home() {
-        return ("<h1>Welcome</h1>");
-    }
     @GetMapping("/secured")
     public String secured(Principal principal) {
         return ("<h1>Secured</h1>" + principal.toString());
