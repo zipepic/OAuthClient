@@ -1,12 +1,5 @@
 package com.example.guideclientoauth;
 
-import com.project.core.commands.user.*;
-import com.project.core.dto.TokenAuthorizationCodeDTO;
-import com.project.core.events.app.ApplicationCreatedEvent;
-import com.project.core.events.user.UserProfileCreatedEvent;
-import com.project.core.events.user.UserProfileProviderMappingLookUpCreatedEvent;
-import com.project.core.events.user.UserWereCompletedEvent;
-import com.project.core.queries.user.CheckUserProfileByProviderIdQuery;
 import com.thoughtworks.xstream.XStream;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
