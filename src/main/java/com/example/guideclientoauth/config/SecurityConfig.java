@@ -28,20 +28,7 @@ public class SecurityConfig {
         this.commandGateway = commandGateway;
         this.userProfileProviderMappingLookUpRepository = userProfileProviderMappingLookUpRepository;
     }
-//    @Bean
-//    @Order(1)
-//    SecurityFilterChain h2ConsoleSecurityFilterChain(HttpSecurity http) throws Exception {
-//        return http
-//                .securityMatcher(AntPathRequestMatcher.antMatcher("/h2-console/**"))
-//                .authorizeHttpRequests( auth -> {
-//                    auth.requestMatchers(AntPathRequestMatcher.antMatcher("/h2-console/**")).permitAll();
-//                })
-//                .csrf(csrf -> csrf.ignoringRequestMatchers(AntPathRequestMatcher.antMatcher("/h2-console/**")))
-//                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
-//                .build();
-//    }
     @Bean
-    @Order(2)
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(request->{
@@ -51,6 +38,13 @@ public class SecurityConfig {
 
                 .oauth2Login(Customizer.withDefaults())
                 .formLogin(Customizer.withDefaults())
+//                .formLogin(form -> form
+//                        .loginPage("/login")
+//                        .permitAll()
+//                        .defaultSuccessUrl("/auth", true)
+//                        .failureUrl("/login-error")
+//                        .disable()
+//                )
                 .addFilterAfter(customAuthenticationSuccessHandler(), OAuth2LoginAuthenticationFilter.class)
                 .build();
     }
