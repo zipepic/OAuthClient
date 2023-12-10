@@ -3,11 +3,10 @@ package com.example.guideclientoauth.config;
 import com.example.guideclientoauth.query.api.data.UserProfileProviderMappingLookUpEntity;
 import com.example.guideclientoauth.query.api.data.UserProfileProviderMappingLookUpRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.core.commands.token.GenerateJwtTokenCommand;
 import com.project.core.commands.user.CreateUserFromProviderIdCommand;
-import com.project.core.commands.user.GenerateTokenByProviderIdCommand;
 import com.project.core.dto.TokenDTO;
-import com.project.core.events.user.UserProfileProviderMappingLookUpCreatedEvent;
-import com.project.core.queries.user.CheckUserProfileByProviderIdQuery;
+import com.project.core.dto.TokenId;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,56 +38,56 @@ public class CustomAuthenticationSuccessHandler extends OncePerRequestFilter {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication instanceof OAuth2AuthenticationToken) {
             OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
-            
+
             String provider = oauthToken.getAuthorizedClientRegistrationId();
 
-            UserProfileProviderMappingLookUpEntity userProfileEntity = null;
-//            if("github".equals(provider))
-//                userProfileEntity = userProfileProviderMappingLookUpRepository.findAllByGithubId(oauthToken.getName()).orElse(null);
-//            if("google".equals(provider))
-//                userProfileEntity = userProfileProviderMappingLookUpRepository.findAllByGoogleId(oauthToken.getName()).orElse(null);
-
-
+            UserProfileProviderMappingLookUpEntity userProfileEntity = getUserProfileEntity(provider, oauthToken.getName());
+            //Если пользователь не найден в локальной БД, то создаем его
+            //TODO add check for user in auth server
             if(userProfileEntity == null) {
-                if ("github".equals(provider)) {
-                    var command = CreateUserFromProviderIdCommand.builder()
-                            .userId(UUID.randomUUID().toString())
-                            .userName(oauthToken.getName())
-                            .providerId(oauthToken.getName())
-                            .authProvider(AuthProvider.GITHUB)
-                            .build();
-                    commandGateway.sendAndWait(command);
-                    System.out.println("GitHub authentication: " + authentication.getName());
-
-                } else if ("google".equals(provider)) {
-                    var command = CreateUserFromProviderIdCommand.builder()
-                            .userId(UUID.randomUUID().toString())
-                            .userName(oauthToken.getName())
-                            .providerId(oauthToken.getName())
-                            .authProvider(AuthProvider.GOOGLE)
-                            .build();
-                    commandGateway.sendAndWait(command);
-                    System.out.println("Google authentication: " + authentication.getName());
-                }
+                createUserFromProviderId(provider, oauthToken.getName());
             }
-            var command = GenerateTokenByProviderIdCommand.builder()
-                    .userId(UUID.randomUUID().toString())
-                    .providerId(oauthToken.getName())
-                    .providerType(provider)
+
+            var command = GenerateJwtTokenCommand.builder()
+                    .tokenFromUserId(new TokenId(userProfileEntity.getUserId()))
                     .build();
-            var tokenDTO = (TokenDTO) commandGateway.sendAndWait(command);
-            System.out.println(tokenDTO.getAccessToken());
-            response.addHeader("access", tokenDTO.getAccessToken());
+            TokenDTO tokenDTO = commandGateway.sendAndWait(command);
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            String tokenJson = objectMapper.writeValueAsString(tokenDTO);
-
-            response.setContentType("application/json");
-
-            response.getWriter().write(tokenJson);
-            response.getWriter().flush();
-
+            writeTokenInResponse(response, tokenDTO);
         }
+
         filterChain.doFilter(request, response);
     }
+
+    private static void writeTokenInResponse(HttpServletResponse response, TokenDTO tokenDTO) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String tokenJson = objectMapper.writeValueAsString(tokenDTO);
+
+        response.setContentType("application/json");
+
+        response.getWriter().write(tokenJson);
+        response.getWriter().flush();
+    }
+
+    private UserProfileProviderMappingLookUpEntity getUserProfileEntity(String provider, String oauthTokenName) {
+        UserProfileProviderMappingLookUpEntity userProfileEntity = null;
+        if("github".equals(provider)) {
+            userProfileEntity = userProfileProviderMappingLookUpRepository.findAllByGithubId(oauthTokenName).orElse(null);
+        } else if("google".equals(provider)) {
+            userProfileEntity = userProfileProviderMappingLookUpRepository.findAllByGoogleId(oauthTokenName).orElse(null);
+        }
+        return userProfileEntity;
+    }
+
+    private void createUserFromProviderId(String provider, String oauthTokenName) {
+        var command = CreateUserFromProviderIdCommand.builder()
+                .userId(UUID.randomUUID().toString())
+                .userName(oauthTokenName)
+                .providerId(oauthTokenName)
+                .authProvider("github".equals(provider) ? AuthProvider.GITHUB : AuthProvider.GOOGLE)
+                .build();
+        commandGateway.send(command);
+        System.out.println(provider + " authentication: " + oauthTokenName);
+    }
+
 }
