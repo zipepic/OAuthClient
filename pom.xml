@@ -30,12 +30,17 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-        <dependency>
-            <groupId>org.axonframework</groupId>
-            <artifactId>axon-spring-boot-starter</artifactId>
-            <version>4.8.2</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.axonframework</groupId>-->
+<!--            <artifactId>axon-spring-boot-starter</artifactId>-->
+<!--            <version>4.8.2</version>-->
+<!--        </dependency>-->
         <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
