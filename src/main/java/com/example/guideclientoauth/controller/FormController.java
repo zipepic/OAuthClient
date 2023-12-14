@@ -10,8 +10,5 @@ public class FormController {
     public String login() {
         return "login";
     }
-    @GetMapping("/")
-    public String home() {
-        return "<h1>Home</h1>";
-    }
+
 }

@@ -7,6 +7,6 @@ import java.util.Optional;
 
 @Repository
 public interface UserProfileProviderMappingLookUpRepository extends JpaRepository<UserProfileProviderMappingLookUpEntity, String> {
-    Optional<UserProfileProviderMappingLookUpEntity> findAllByGithubId(String githubId);
-    Optional<UserProfileProviderMappingLookUpEntity> findAllByGoogleId(String googleId);
+    Optional<UserProfileProviderMappingLookUpEntity> findByGithubId(String githubId);
+    Optional<UserProfileProviderMappingLookUpEntity> findByGoogleId(String googleId);
 }

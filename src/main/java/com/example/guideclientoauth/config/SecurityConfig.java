@@ -7,14 +7,12 @@ import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -22,11 +20,13 @@ public class SecurityConfig {
     private final QueryGateway queryGateway;
     private final CommandGateway commandGateway;
     private final UserProfileProviderMappingLookUpRepository userProfileProviderMappingLookUpRepository;
+    private final AuthProviderImp authProviderImp;
     @Autowired
-    public SecurityConfig(QueryGateway queryGateway, CommandGateway commandGateway, UserProfileProviderMappingLookUpRepository userProfileProviderMappingLookUpRepository) {
+    public SecurityConfig(QueryGateway queryGateway, CommandGateway commandGateway, UserProfileProviderMappingLookUpRepository userProfileProviderMappingLookUpRepository, AuthProviderImp authProviderImp) {
         this.queryGateway = queryGateway;
         this.commandGateway = commandGateway;
         this.userProfileProviderMappingLookUpRepository = userProfileProviderMappingLookUpRepository;
+        this.authProviderImp = authProviderImp;
     }
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -38,14 +38,8 @@ public class SecurityConfig {
 
                 .oauth2Login(Customizer.withDefaults())
                 .formLogin(Customizer.withDefaults())
-//                .formLogin(form -> form
-//                        .loginPage("/login")
-//                        .permitAll()
-//                        .defaultSuccessUrl("/auth", true)
-//                        .failureUrl("/login-error")
-//                        .disable()
-//                )
                 .addFilterAfter(customAuthenticationSuccessHandler(), OAuth2LoginAuthenticationFilter.class)
+                .authenticationProvider(authProviderImp)
                 .build();
     }
     @Bean

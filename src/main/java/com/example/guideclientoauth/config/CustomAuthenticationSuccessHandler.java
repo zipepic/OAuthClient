@@ -21,6 +21,7 @@ import tokenlib.util.jwk.AuthProvider;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class CustomAuthenticationSuccessHandler extends OncePerRequestFilter {
     private final CommandGateway commandGateway;
@@ -40,22 +41,30 @@ public class CustomAuthenticationSuccessHandler extends OncePerRequestFilter {
             OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
 
             String provider = oauthToken.getAuthorizedClientRegistrationId();
-
+            System.out.println("All good 1");
             UserProfileProviderMappingLookUpEntity userProfileEntity = getUserProfileEntity(provider, oauthToken.getName());
+            System.out.println("All good 2");
             //Если пользователь не найден в локальной БД, то создаем его
             //TODO add check for user in auth server
             if(userProfileEntity == null) {
                 createUserFromProviderId(provider, oauthToken.getName());
             }
-
+            System.out.println("All good 3");
             var command = GenerateJwtTokenCommand.builder()
                     .tokenFromUserId(new TokenId(userProfileEntity.getUserId()))
                     .build();
             TokenDTO tokenDTO = commandGateway.sendAndWait(command);
-
+            System.out.println("All good 4");
             writeTokenInResponse(response, tokenDTO);
         }
-
+        if(authentication != null && authentication.isAuthenticated()) {
+            System.out.println("User " + authentication.getName() + " authenticated");
+            var command = GenerateJwtTokenCommand.builder()
+                    .tokenFromUserId(new TokenId(authentication.getName()))
+                    .build();
+            TokenDTO tokenDTO = commandGateway.sendAndWait(command);
+            writeTokenInResponse(response, tokenDTO);
+        }
         filterChain.doFilter(request, response);
     }
 
@@ -72,9 +81,9 @@ public class CustomAuthenticationSuccessHandler extends OncePerRequestFilter {
     private UserProfileProviderMappingLookUpEntity getUserProfileEntity(String provider, String oauthTokenName) {
         UserProfileProviderMappingLookUpEntity userProfileEntity = null;
         if("github".equals(provider)) {
-            userProfileEntity = userProfileProviderMappingLookUpRepository.findAllByGithubId(oauthTokenName).orElse(null);
+            userProfileEntity = userProfileProviderMappingLookUpRepository.findAll().stream().filter(x-> oauthTokenName.equals(x.getGithubId())).collect(Collectors.toList()).get(0);
         } else if("google".equals(provider)) {
-            userProfileEntity = userProfileProviderMappingLookUpRepository.findAllByGoogleId(oauthTokenName).orElse(null);
+            userProfileEntity = userProfileProviderMappingLookUpRepository.findAll().stream().filter(x-> oauthTokenName.equals(x.getGoogleId())).collect(Collectors.toList()).get(0);
         }
         return userProfileEntity;
     }

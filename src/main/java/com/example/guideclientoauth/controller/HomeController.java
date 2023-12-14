@@ -23,4 +23,8 @@ public class HomeController {
     @GetMapping("/auth")
     public void auth() {
     }
+    @GetMapping("/")
+    public String home() {
+        return "<h1>Home</h1>";
+    }
 }
